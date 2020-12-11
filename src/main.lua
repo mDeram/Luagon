@@ -1,213 +1,156 @@
-function Collide(pCoord, pX, pY, pVx, pVy)
-  
-  local value
-  local prevVx = 0
-  local prevVy = 0
+io.stdout:setvbuf('no')
+love.graphics.setDefaultFilter("nearest")
+if arg[#arg] == "-debug" then require("mobdebug").start() end
 
-  if math.abs(pVx) >= 1 or math.abs(pVy) >= 1 then
-    
-    if math.abs(pVx) > math.abs(pVy) then
-      
-      local f
-      for f = 1, math.abs(pVx) do
-        local newVx
-        if pVx < 0 then
-          newVx = -f
-        else
-          newVx = f
-        end
-        local newVy = f*(pVy/math.abs(pVx))
-        value = CollideEffect(pCoord, pX, pY, newVx, newVy)
-        if value == -1 then
-          return prevVx, prevVy
-        end
-        prevVx = newVx
-        prevVy = newVy
-      end
-      
+require("collideLib")
+
+Hero = {}
+gravity = 0.3
+
+platforms = {}
+
+hero = {}
+
+function love.load()
+  love.window.setMode(1200, 700)
+  
+  jumpPressed = false
+  hero.x = 100
+  hero.y = 200
+  hero.vx = 0
+  hero.vy = 0
+  hero.jumpHeight = 6
+  hero.speed = 2
+  --hero.coord = {0, 0,  20, 0,  20, 35,  0, 35}
+  hero.coord = {10, 0,  25, 15,  20, 35,  10, 40,  0, 35,  -5, 15}
+  hero.finalCoord = {}
+  
+  --local pos = {0, 0,  200, 0,  200, 40,  0, 40}
+  local pos = {0, 0,  200, 0,  220, 20,  200, 40,  0, 40,  -20, 20}
+  AddPlatform(0, 400, pos)
+  AddPlatform(300, 400, pos)
+  AddPlatform(100, 500, pos)
+  AddPlatform(400, 500, pos)
+  AddPlatform(250, 480, pos)
+  local pos = {0, 0,  200, 0,  200, 1,  0, 1}
+  AddPlatform(400, 200, pos)
+  
+end
+
+
+function love.update(dt)
+  
+  Hero.move(dt)
+  
+  --Pour le draw
+  local i
+  for i = 1, #hero.coord do
+    if i % 2 == 0 then
+      hero.finalCoord[i] = hero.coord[i] + hero.y
     else
-      
-      local f
-      for f = 1, math.abs(pVy) do
-        local newVx = f*(pVx/math.abs(pVy))
-        local newVy
-        if pVy < 0 then
-          newVy = -f
-        else
-          newVy = f
-        end
-        value = CollideEffect(pCoord, pX, pY, newVx, newVy)
-        if value == -1 then
-          return prevVx, prevVy
-        end
-        prevVx = newVx
-        prevVy = newVy
-      end
-      
+      hero.finalCoord[i] = hero.coord[i] + hero.x
     end
-    
   end
   
-  value = CollideEffect(pCoord, pX, pY, pVx, pVy)
   
-  if value == -1 then
-    return prevVx, prevVy
-  elseif value == 0 then
-    return pVx, pVy
+  for n = #platforms, 1, -1 do
+    local platform = platforms[n]
+    
+    local i
+    for i = 1, #platform.coord do
+      if i % 2 == 0 then
+        platform.finalCoord[i] = platform.coord[i] + platform.y
+      else
+        platform.finalCoord[i] = platform.coord[i] + platform.x
+      end
+    end
+  end
+  
+  --local i
+  --for i = 1, 1001 do 
+  if math.abs(hero.vx) > 0 or math.abs(hero.vy) > 0 then
+    hero.vx, hero.vy = Collide(hero.coord, hero.x, hero.y, hero.vx, hero.vy)
+  end
+  
+  
+  hero.x = hero.x + hero.vx
+  hero.y = hero.y + hero.vy
+  
+  
+  slowDown = 0.02
+  if hero.vx ~= 0 then
+    if hero.vx > slowDown then
+      hero.vx = hero.vx - slowDown*60*dt 
+    end
+    if hero.vx < -slowDown then
+      hero.vx = hero.vx + slowDown*60*dt
+    end
+    if math.abs(hero.vx) <= slowDown then
+      hero.vx = 0
+    end
+  end
+  
+  if not CollideBottom(hero.coord, hero.x, hero.y) then
+    hero.vy = hero.vy + gravity*60*dt
+  else
+    hero.vy = 0
+  end
+
+end
+
+
+function love.draw()
+  
+  love.graphics.setColor(255, 255, 255)
+  love.graphics.setBackgroundColor(255, 255, 255)
+  love.graphics.setColor(0, 0, 0)
+  love.graphics.polygon("line", hero.finalCoord)
+  for n = #platforms, 1, -1 do
+    local platform = platforms[n]
+    love.graphics.polygon("line", platform.finalCoord)
+  end
+  love.graphics.print(love.timer.getFPS(), 0, 0)
+  love.graphics.print(math.floor(hero.vy), 0, 10)
+  
+end
+
+
+function Hero.move(dt)
+  
+  if love.keyboard.isDown("right") and not love.keyboard.isDown("left") then
+    hero.vx = hero.speed*60*dt
+  end
+  if love.keyboard.isDown("left") and not love.keyboard.isDown("right") then
+    hero.vx = -hero.speed*60*dt
+  end
+  if love.keyboard.isDown("left") and love.keyboard.isDown("right") then
+    hero.vx = 0
+  end
+  if love.keyboard.isDown("down") then
+    hero.vx = 0
+  end
+  
+  if love.keyboard.isDown("space") or love.keyboard.isDown("up") then
+    if not jumpPressed then
+      hero.vy = -hero.jumpHeight*60*dt
+      jumpPressed = true
+    end
+  else
+    jumpPressed = false
   end
   
 end
 
 
-
-
-function CollideEffect(pCoord, pX, pY, pVx, pVy)
+function AddPlatform(pX, pY, pCoord)
   
-  local objectLength = #pCoord
-
-  local object = {}
-  local i
-  for i = 1, objectLength/2 do
-    object[2*i-1] = pCoord[2*i-1] + pX + pVx
-    object[i*2] = pCoord[i*2] + pY + pVy
-  end
+  local platform = {}
   
+  platform.x = pX
+  platform.y = pY
+  platform.coord = pCoord
+  platform.finalCoord = {}
   
-  local j
-  for j = 1, #platforms do
-    
-    platform = platforms[j]
-
-    local length = #platform.coord
-  
-    local collider = {}
-    local a
-    for a = 1, length/2 do
-      collider[2*a-1] = platform.coord[2*a-1] + platform.x
-      collider[a*2] = platform.coord[a*2] + platform.y
-    end
-    
-    local i
-    for i = 1, objectLength/2 do
-      
-      local result = true
-    
-      --Pour chaque points du hero
-      local sign = (collider[length - 1] - object[2*i-1])*(collider[2] - object[2*i]) - (collider[length] - object[2*i])*(collider[1] - object[2*i-1])
-      
-      local a
-      for a = 1, length/2 - 1 do
-        local calc = (collider[2*a-1] - object[2*i-1])*(collider[2+2*a] - object[2*i]) - (collider[2*a] - object[2*i])*(collider[1+2*a] - object[2*i-1])
-        if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
-          result = false
-        end
-      end
-      
-      if result then
-        return -1
-      end
-    end
-    
-    
-    local i
-    for i = 1, length/2 do
-      
-      local result = true
-      
-      --Pour chaque points de la platforme
-      local sign = (object[objectLength - 1] - collider[2*i-1])*(object[2] - collider[2*i]) - (object[objectLength] - collider[2*i])*(object[1] - collider[2*i-1])
-      
-      local a
-      for a = 1, objectLength/2 - 1 do
-        local calc = (object[2*a-1] - collider[2*i-1])*(object[2+2*a] - collider[2*i]) - (object[2*a] - collider[2*i])*(object[1+2*a] - collider[2*i-1])
-        if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
-          result = false
-        end
-      end
-      
-      if result then
-        return -1
-      end
-    end
-  end
-  
-  return 0
-  
-end
-
-
-
-
-function CollideBottom(pCoord, pX, pY)
-  
-  local objectLength = #pCoord
-
-  local object = {}
-  local i
-  for i = 1, objectLength/2 do
-    object[2*i-1] = pCoord[2*i-1] + pX
-    object[i*2] = pCoord[i*2] + pY + 1
-  end
-  
-  
-  local j
-  for j = 1, #platforms do
-    
-    platform = platforms[j]
-
-    local length = #platform.coord
-  
-    local collider = {}
-    local a
-    for a = 1, length/2 do
-      collider[2*a-1] = platform.coord[2*a-1] + platform.x
-      collider[a*2] = platform.coord[a*2] + platform.y
-    end
-    
-    local i
-    for i = 1, objectLength/2 do
-      
-      local result = true
-    
-      --Pour chaque points du hero
-      local sign = (collider[length - 1] - object[2*i-1])*(collider[2] - object[2*i]) - (collider[length] - object[2*i])*(collider[1] - object[2*i-1])
-      
-      local a
-      for a = 1, length/2 - 1 do
-        local calc = (collider[2*a-1] - object[2*i-1])*(collider[2+2*a] - object[2*i]) - (collider[2*a] - object[2*i])*(collider[1+2*a] - object[2*i-1])
-        if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
-          result = false
-        end
-      end
-      
-      if result then
-        return true
-      end
-    end
-    
-    
-    local i
-    for i = 1, length/2 do
-      
-      local result = true
-      
-      --Pour chaque points de la platforme
-      local sign = (object[objectLength - 1] - collider[2*i-1])*(object[2] - collider[2*i]) - (object[objectLength] - collider[2*i])*(object[1] - collider[2*i-1])
-      
-      local a
-      for a = 1, objectLength/2 - 1 do
-        local calc = (object[2*a-1] - collider[2*i-1])*(object[2+2*a] - collider[2*i]) - (object[2*a] - collider[2*i])*(object[1+2*a] - collider[2*i-1])
-        if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
-          result = false
-        end
-      end
-      
-      if result then
-        return true
-      end
-    end
-  end
-  
-  return false
+  table.insert(platforms, platform)
   
 end
