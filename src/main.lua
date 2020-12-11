@@ -1,6 +1,7 @@
 io.stdout:setvbuf('no')
 love.graphics.setDefaultFilter("nearest")
 if arg[#arg] == "-debug" then require("mobdebug").start() end
+function math.angle(x1,y1, x2,y2) return math.atan2(y2-y1, x2-x1) end
 
 require("collideLib")
 
@@ -21,6 +22,7 @@ function love.load()
   hero.vy = 0
   hero.lastVx = 0
   hero.lastVy = 0
+  hero.polygonCollide = nil
   hero.stop = false
   hero.jumpHeight = 6
   hero.speed = 2
@@ -73,17 +75,28 @@ function love.update(dt)
     end
   end
   
+  --Transfert de variable
   local lastVx = hero.vx
   local lastVy = hero.vy
   
+  
+  --[[if hero.stop then
+    CollideContact(hero.coord, hero.x, hero.y, pVx, pVy, hero.lastVx, hero.lastVy, hero.polygonCollide)
+  end]]
   if hero.vx ~= 0 or hero.vy ~= 0 then
+    local pVx
+    local pVy
     if hero.vx == 0 then
-      hero.vx, hero.vy, hero.stop = Collide(hero.coord, hero.x, hero.y, 0, hero.vy*60*dt, hero.lastVx, hero.lastVy, hero.stop)
+      pVx = 0
+      pVy = hero.vy*60*dt
     elseif hero.vy == 0 then
-      hero.vx, hero.vy, hero.stop = Collide(hero.coord, hero.x, hero.y, hero.vx*60*dt, 0, hero.lastVx, hero.lastVy, hero.stop)
+      pVx = hero.vx*60*dt
+      pVy = 0
     else
-      hero.vx, hero.vy, hero.stop = Collide(hero.coord, hero.x, hero.y, hero.vx*60*dt, hero.vy*60*dt, hero.lastVx, hero.lastVy, hero.stop)
+      pVx = hero.vx*60*dt
+      pVy = hero.vy*60*dt
     end
+    hero.vx, hero.vy, hero.stop, hero.polygonCollide = Collide(hero.coord, hero.x, hero.y, pVx, pVy)
   end
   
   if hero.vx ~= 0 then
