@@ -1,141 +1,112 @@
-function Collide(pCoord, pX, pY, pVx, pVy)
+function Collide(pCoord, pX, pY, pVx, pVy, pLastVx, pLastVy, pStop)
   
   local value
   local prevVx = 0
   local prevVy = 0
-
-  if math.abs(pVx) >= 1 or math.abs(pVy) >= 1 then
+  
+  --if pStop then
+    --Vérification anti blocage
+    --Utilisation de last vx et last vy
     
-    if math.abs(pVx) > math.abs(pVy) then
+  --else
+    if math.abs(pVx) > 1 or math.abs(pVy) > 1 then
+      
+      local bigger
+      if math.abs(pVx) > math.abs(pVy) then bigger = pVx else bigger = pVy end
       
       local f
-      for f = 1, math.abs(pVx) do
-        local newVx
-        if pVx < 0 then
-          newVx = -f
+      for f = 1, math.abs(bigger) do
+        
+        local newVx, newVy
+        if bigger == pVx then
+          newVy = f*(pVy/math.abs(pVx))
+          if pVx < 0 then newVx = -f else newVx = f end
         else
-          newVx = f
+          newVx = f*(pVx/math.abs(pVy))
+          if pVy < 0 then newVy = -f else newVy = f end
         end
-        local newVy = f*(pVy/math.abs(pVx))
+        
         value = CollideEffect(pCoord, pX, pY, newVx, newVy)
         if value == -1 then
-          return prevVx, prevVy
+          return prevVx, prevVy, true
         end
         prevVx = newVx
         prevVy = newVy
-      end
-      
-    else
-      
-      local f
-      for f = 1, math.abs(pVy) do
-        local newVx = f*(pVx/math.abs(pVy))
-        local newVy
-        if pVy < 0 then
-          newVy = -f
-        else
-          newVy = f
-        end
-        value = CollideEffect(pCoord, pX, pY, newVx, newVy)
-        if value == -1 then
-          return prevVx, prevVy
-        end
-        prevVx = newVx
-        prevVy = newVy
+        
       end
       
     end
     
-  end
-  
-  value = CollideEffect(pCoord, pX, pY, pVx, pVy)
-  
-  if value == -1 then
-    return prevVx, prevVy
-  elseif value == 0 then
-    return pVx, pVy
-  end
+    value = CollideEffect(pCoord, pX, pY, pVx, pVy)
+    
+    if value == -1 then
+      return prevVx, prevVy, true
+    elseif value == 0 then
+      return pVx, pVy, false
+    end
+  --end
   
 end
 
 
-
-
 function CollideEffect(pCoord, pX, pY, pVx, pVy)
-  
   local objectLength = #pCoord
 
-  local object = {}
-  local i
-  for i = 1, objectLength, 2 do
-    object[i] = pCoord[i] + pX + pVx
-    object[i+1] = pCoord[i+1] + pY + pVy
-  end
-  
+  local object = copyTable(pCoord, pX + pVx, pY + pVy)
   
   local j
   for j = 1, #platforms do
-    
     platform = platforms[j]
-
     local length = #platform.coord
   
-    local collider = {}
+  
+    local collider = copyTable(platform.coord, platform.x, platform.y)
+    
+    if CollidePolygon(objectLength, length, object, collider) == -1 then
+      return -1
+    end
+    if CollidePolygon(length, objectLength, collider, object) == -1 then
+      return -1
+    end
+    
+  end
+  return 0
+end
+
+
+function CollidePolygon(pCLength, pELength, pC, pE)
+  local i
+  for i = 1, pCLength, 2 do
+    
+    local result = true
+    
+    --Pour chaque points de la platforme
+    local sign = (pE[pELength - 1] - pC[i])*(pE[2] - pC[i+1]) - (pE[pELength] - pC[i+1])*(pE[1] - pC[i])
+    
     local a
-    for a = 1, length, 2 do
-      collider[a] = platform.coord[a] + platform.x
-      collider[a+1] = platform.coord[a+1] + platform.y
-    end
-    
-    local i
-    for i = 1, objectLength, 2 do
-      
-      local result = true
-    
-      --Pour chaque points du hero
-      local sign = (collider[length - 1] - object[i])*(collider[2] - object[i+1]) - (collider[length] - object[i+1])*(collider[1] - object[i])
-      
-      local a
-      for a = 1, length-2, 2 do
-        local calc
-        if a ~= length - 1 then
-          calc = (collider[a] - object[i])*(collider[a+3] - object[i+1]) - (collider[a+1] - object[i+1])*(collider[a+2] - object[i])
-        end
-        if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
-          result = false
-        end
+    for a = 1, pELength-2, 2 do
+      local calc
+      if a ~= pELength - 1 then
+        calc = (pE[a] - pC[i])*(pE[a+3] - pC[i+1]) - (pE[a+1] - pC[i+1])*(pE[a+2] - pC[i])
       end
-      
-      if result then
-        return -1
+      if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
+        result = false
       end
     end
     
-    
-    local i
-    for i = 1, length, 2 do
-      
-      local result = true
-      
-      --Pour chaque points de la platforme
-      local sign = (object[objectLength - 1] - collider[i])*(object[2] - collider[i+1]) - (object[objectLength] - collider[i+1])*(object[1] - collider[i])
-      local a
-      for a = 1, objectLength-2, 2 do
-        local calc
-        if a ~= objectLength - 1 then
-          calc = (object[a] - collider[i])*(object[a+3] - collider[i+1]) - (object[a+1] - collider[i+1])*(object[a+2] - collider[i])
-        end
-        if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
-          result = false
-        end
-      end
-      
-      if result then
-        return -1
-      end
+    if result then
+      return -1
     end
   end
-  
-  return 0
-  
+end
+
+
+function copyTable(pTable, addX, addY)
+  local table = {}
+  local i
+  for i = 1, #pTable, 2 do
+    table[i] = pTable[i] + addX
+    table[i+1] = pTable[i+1] + addY
+  end
+  return table
 end
