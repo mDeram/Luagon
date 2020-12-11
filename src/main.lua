@@ -90,7 +90,9 @@ function love.update(dt)
     end
   end
   
-  if not CollideBottom(hero.coord, hero.x, hero.y) then
+  
+  local value = CollideEffect(hero.coord, hero.x, hero.y, 0, 1)
+  if value == 0 then
     hero.vy = hero.vy + gravity*60*dt
   else
     hero.vy = 0

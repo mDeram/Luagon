@@ -19,47 +19,6 @@ function Collide(pCoord, pX, pY, pVx, pVy)
         local newVy = f*(pVy/math.abs(pVx))
         value = CollideEffect(pCoord, pX, pY, newVx, newVy)
         if value == -1 then
-          value = CollideEffect(pCoord, pX, pY, newVx, prevVy)
-          if value == -1 then
-            value = CollideEffect(pCoord, pX, pY, prevVx, newVx)
-            if value == - 1 then
-              return prevVx, prevVy
-            else
-              local g
-              for g = newVx, math.abs(pVx) do
-                newVy = prevVy
-                if pVx < 0 then
-                  newVx = -g
-                else
-                  newVx = g
-                end
-                
-                value = CollideEffect(pCoord, pX, pY, newVx, newVy)
-                if value == -1 then
-                  return prevVx, prevVy
-                end
-                prevVx = newVx
-                prevVy = newVy
-              end
-            end
-          else
-            local g
-            for g = newVy, math.abs(pVy) do
-              print("a")
-              newVx = prevVx
-              if pVy < 0 then
-                newVy = -g
-              else
-                newVy = g
-              end
-              value = CollideEffect(pCoord, pX, pY, newVx, newVy)
-              if value == -1 then
-                return prevVx, prevVy
-              end
-              prevVx = newVx
-              prevVy = newVy
-            end
-          end
           return prevVx, prevVy
         end
         prevVx = newVx
@@ -79,47 +38,6 @@ function Collide(pCoord, pX, pY, pVx, pVy)
         end
         value = CollideEffect(pCoord, pX, pY, newVx, newVy)
         if value == -1 then
-          value = CollideEffect(pCoord, pX, pY, prevVx, newVy)
-          if value == -1 then
-            value = CollideEffect(pCoord, pX, pY, newVx, prevVx)
-            if value == - 1 then
-              return prevVx, prevVy
-            else
-              local g
-              for g = newVx, math.abs(pVx) do
-                newVy = prevVy
-                if pVx < 0 then
-                  newVx = -g
-                else
-                  newVx = g
-                end
-                
-                value = CollideEffect(pCoord, pX, pY, newVx, newVy)
-                if value == -1 then
-                  return prevVx, prevVy
-                end
-                prevVx = newVx
-                prevVy = newVy
-              end
-            end
-          else
-            local g
-            for g = newVy, math.abs(pVy) do
-              print("b")
-              newVx = prevVx
-              if pVy < 0 then
-                newVy = -g
-              else
-                newVy = g
-              end
-              value = CollideEffect(pCoord, pX, pY, newVx, newVy)
-              if value == -1 then
-                return prevVx, prevVy
-              end
-              prevVx = newVx
-              prevVy = newVy
-            end
-          end
           return prevVx, prevVy
         end
         prevVx = newVx
@@ -149,9 +67,9 @@ function CollideEffect(pCoord, pX, pY, pVx, pVy)
 
   local object = {}
   local i
-  for i = 1, objectLength/2 do
-    object[2*i-1] = pCoord[2*i-1] + pX + pVx
-    object[i*2] = pCoord[i*2] + pY + pVy
+  for i = 1, objectLength, 2 do
+    object[i] = pCoord[i] + pX + pVx
+    object[i+1] = pCoord[i+1] + pY + pVy
   end
   
   
@@ -164,22 +82,25 @@ function CollideEffect(pCoord, pX, pY, pVx, pVy)
   
     local collider = {}
     local a
-    for a = 1, length/2 do
-      collider[2*a-1] = platform.coord[2*a-1] + platform.x
-      collider[a*2] = platform.coord[a*2] + platform.y
+    for a = 1, length, 2 do
+      collider[a] = platform.coord[a] + platform.x
+      collider[a+1] = platform.coord[a+1] + platform.y
     end
     
     local i
-    for i = 1, objectLength/2 do
+    for i = 1, objectLength, 2 do
       
       local result = true
     
       --Pour chaque points du hero
-      local sign = (collider[length - 1] - object[2*i-1])*(collider[2] - object[2*i]) - (collider[length] - object[2*i])*(collider[1] - object[2*i-1])
+      local sign = (collider[length - 1] - object[i])*(collider[2] - object[i+1]) - (collider[length] - object[i+1])*(collider[1] - object[i])
       
       local a
-      for a = 1, length/2 - 1 do
-        local calc = (collider[2*a-1] - object[2*i-1])*(collider[2+2*a] - object[2*i]) - (collider[2*a] - object[2*i])*(collider[1+2*a] - object[2*i-1])
+      for a = 1, length-2, 2 do
+        local calc
+        if a ~= length - 1 then
+          calc = (collider[a] - object[i])*(collider[a+3] - object[i+1]) - (collider[a+1] - object[i+1])*(collider[a+2] - object[i])
+        end
         if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
           result = false
         end
@@ -192,16 +113,18 @@ function CollideEffect(pCoord, pX, pY, pVx, pVy)
     
     
     local i
-    for i = 1, length/2 do
+    for i = 1, length, 2 do
       
       local result = true
       
       --Pour chaque points de la platforme
-      local sign = (object[objectLength - 1] - collider[2*i-1])*(object[2] - collider[2*i]) - (object[objectLength] - collider[2*i])*(object[1] - collider[2*i-1])
-      
+      local sign = (object[objectLength - 1] - collider[i])*(object[2] - collider[i+1]) - (object[objectLength] - collider[i+1])*(object[1] - collider[i])
       local a
-      for a = 1, objectLength/2 - 1 do
-        local calc = (object[2*a-1] - collider[2*i-1])*(object[2+2*a] - collider[2*i]) - (object[2*a] - collider[2*i])*(object[1+2*a] - collider[2*i-1])
+      for a = 1, objectLength-2, 2 do
+        local calc
+        if a ~= objectLength - 1 then
+          calc = (object[a] - collider[i])*(object[a+3] - collider[i+1]) - (object[a+1] - collider[i+1])*(object[a+2] - collider[i])
+        end
         if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
           result = false
         end
@@ -214,82 +137,5 @@ function CollideEffect(pCoord, pX, pY, pVx, pVy)
   end
   
   return 0
-  
-end
-
-
-
-
-function CollideBottom(pCoord, pX, pY)
-  
-  local objectLength = #pCoord
-
-  local object = {}
-  local i
-  for i = 1, objectLength/2 do
-    object[2*i-1] = pCoord[2*i-1] + pX
-    object[i*2] = pCoord[i*2] + pY + 1
-  end
-  
-  
-  local j
-  for j = 1, #platforms do
-    
-    platform = platforms[j]
-
-    local length = #platform.coord
-  
-    local collider = {}
-    local a
-    for a = 1, length/2 do
-      collider[2*a-1] = platform.coord[2*a-1] + platform.x
-      collider[a*2] = platform.coord[a*2] + platform.y
-    end
-    
-    local i
-    for i = 1, objectLength/2 do
-      
-      local result = true
-    
-      --Pour chaque points du hero
-      local sign = (collider[length - 1] - object[2*i-1])*(collider[2] - object[2*i]) - (collider[length] - object[2*i])*(collider[1] - object[2*i-1])
-      
-      local a
-      for a = 1, length/2 - 1 do
-        local calc = (collider[2*a-1] - object[2*i-1])*(collider[2+2*a] - object[2*i]) - (collider[2*a] - object[2*i])*(collider[1+2*a] - object[2*i-1])
-        if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
-          result = false
-        end
-      end
-      
-      if result then
-        return true
-      end
-    end
-    
-    
-    local i
-    for i = 1, length/2 do
-      
-      local result = true
-      
-      --Pour chaque points de la platforme
-      local sign = (object[objectLength - 1] - collider[2*i-1])*(object[2] - collider[2*i]) - (object[objectLength] - collider[2*i])*(object[1] - collider[2*i-1])
-      
-      local a
-      for a = 1, objectLength/2 - 1 do
-        local calc = (object[2*a-1] - collider[2*i-1])*(object[2+2*a] - collider[2*i]) - (object[2*a] - collider[2*i])*(object[1+2*a] - collider[2*i-1])
-        if not ((calc >= 0 and sign >= 0) or (calc < 0 and sign < 0)) then
-          result = false
-        end
-      end
-      
-      if result then
-        return true
-      end
-    end
-  end
-  
-  return false
   
 end
