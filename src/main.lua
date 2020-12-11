@@ -3,7 +3,7 @@ love.graphics.setDefaultFilter("nearest")
 if arg[#arg] == "-debug" then require("mobdebug").start() end
 function math.angle(x1,y1, x2,y2) return math.atan2(y2-y1, x2-x1) end
 
-require("collideLib")
+require("CollideLib")
 
 Hero = {}
 gravity = 0.3
@@ -20,14 +20,12 @@ function love.load()
   hero.y = 200
   hero.vx = 0
   hero.vy = 0
-  hero.lastVx = 0
-  hero.lastVy = 0
-  hero.polygonCollide = nil
-  hero.stop = false
   hero.jumpHeight = 6
   hero.speed = 2
   --hero.coord = {0, 0,  20, 0,  20, 35,  0, 35}
-  hero.coord = {10, 0,  25, 15,  20, 35,  10, 40,  0, 35,  -5, 15}
+  hero.coord = {15, 0,  30, 15,  25, 35,  15, 40,  5, 35,  0, 15}
+  hero.width = 30
+  hero.height = 40
   hero.finalCoord = {}
   
   --local pos = {0, 0,  200, 0,  200, 40,  0, 40}
@@ -38,11 +36,14 @@ function love.load()
   AddPlatform(400, 600, pos)
   AddPlatform(250, 580, pos)
   AddPlatform(500, 220, pos)
+  local pos = {0, 0,  200, 0,  200, 32,  0, 32}
   AddPlatform(300, 320, pos)
   AddPlatform(600, 320, pos)
   AddPlatform(450, 410, pos)
   local pos = {0, 0,  200, 0,  200, 1,  0, 1}
-  AddPlatform(400, 200, pos)
+  AddPlatform(400, 180, pos)
+  local pos = {0, 0,  1, 0,  1, 200,  0, 200}
+  AddPlatform(500, 80, pos)
   
 end
 
@@ -50,64 +51,7 @@ end
 function love.update(dt)
   
   Hero.move(dt)
-  
-  --Pour le draw
-  local i
-  for i = 1, #hero.coord do
-    if i % 2 == 0 then
-      hero.finalCoord[i] = hero.coord[i] + hero.y
-    else
-      hero.finalCoord[i] = hero.coord[i] + hero.x
-    end
-  end
-  
-  
-  for n = #platforms, 1, -1 do
-    local platform = platforms[n]
-    
-    local i
-    for i = 1, #platform.coord do
-      if i % 2 == 0 then
-        platform.finalCoord[i] = platform.coord[i] + platform.y
-      else
-        platform.finalCoord[i] = platform.coord[i] + platform.x
-      end
-    end
-  end
-  
-  --Transfert de variable
-  local lastVx = hero.vx
-  local lastVy = hero.vy
-  
-  
-  --[[if hero.stop then
-    CollideContact(hero.coord, hero.x, hero.y, pVx, pVy, hero.lastVx, hero.lastVy, hero.polygonCollide)
-  end]]
-  if hero.vx ~= 0 or hero.vy ~= 0 then
-    local pVx
-    local pVy
-    if hero.vx == 0 then
-      pVx = 0
-      pVy = hero.vy*60*dt
-    elseif hero.vy == 0 then
-      pVx = hero.vx*60*dt
-      pVy = 0
-    else
-      pVx = hero.vx*60*dt
-      pVy = hero.vy*60*dt
-    end
-    hero.vx, hero.vy, hero.stop, hero.polygonCollide = Collide(hero.coord, hero.x, hero.y, pVx, pVy)
-  end
-  
-  if hero.vx ~= 0 then
-    hero.x = hero.x + hero.vx
-  end
-  if hero.vy ~= 0 then
-    hero.y = hero.y + hero.vy
-  end
-  
-  hero.lastVx = lastVx
-  hero.lastVy = lastVy
+  world:update(dt)
   
   
   slowDown = 0.02
@@ -124,12 +68,38 @@ function love.update(dt)
   end
   
   
-  local value = CollideEffect(hero.coord, hero.x, hero.y, 0, 1)
-  if value == 0 then
+  
+  if not CollideLib.Effect(hero.coord, hero.x, hero.y, 0, 1) then
     hero.vy = hero.vy + gravity
   else
     hero.vy = 0
   end
+  
+  --hero.vy = hero.vy + gravity
+  
+  
+  --Pour le draw
+  local i
+  for i = 1, #hero.coord do
+    if i % 2 == 0 then
+      hero.finalCoord[i] = hero.coord[i] + hero.y
+    else
+      hero.finalCoord[i] = hero.coord[i] + hero.x
+    end
+  end
+  for n = #platforms, 1, -1 do
+    local platform = platforms[n]
+    
+    local i
+    for i = 1, #platform.coord do
+      if i % 2 == 0 then
+        platform.finalCoord[i] = platform.coord[i] + platform.y
+      else
+        platform.finalCoord[i] = platform.coord[i] + platform.x
+      end
+    end
+  end
+  --Fin de draw
   
 end
 
@@ -144,19 +114,55 @@ function love.draw()
     local platform = platforms[n]
     love.graphics.polygon("line", platform.finalCoord)
   end
+  if point ~= nil then
+    love.graphics.setColor(255, 0, 0)
+    love.graphics.circle("fill", point.x, point.y, 5)
+  end
+  if pAx ~= nil then
+    love.graphics.setColor(0, 0, 255)
+    love.graphics.line(pAx, pAy, pBx, pBy)
+  end
+  
+  A = hero.x + hero.width/2
+  B = hero.y + hero.height/2
+  C = hero.x + hero.vx*10 + hero.width/2
+  D = hero.y + hero.vy*10 + hero.height/2
+  love.graphics.setColor(0, 255, 0)
+  love.graphics.line(A, B, C, D)
+  
+  
+  love.graphics.setColor(0, 0, 0)
   love.graphics.print(love.timer.getFPS(), 0, 0)
   love.graphics.print(math.floor(hero.vy), 0, 10)
   
+  --[[
+  myStencilFunction = function()
+    love.graphics.circle("fill", 400, 300, 250)
+  end
+  love.graphics.setColor(0, 255, 255)
+  love.graphics.setStencil(myStencilFunction)
+  ]]
+  
 end
-
 
 function Hero.move(dt)
   
   if love.keyboard.isDown("right") and not love.keyboard.isDown("left") then
-    hero.vx = hero.speed
+    
+    if not CollideLib.Effect(hero.coord, hero.x, hero.y, 1, 0) then
+      hero.vx = hero.speed
+    else
+      hero.vx = 0
+    end
+    --hero.vx = hero.speed
   end
   if love.keyboard.isDown("left") and not love.keyboard.isDown("right") then
-    hero.vx = -hero.speed
+    if not CollideLib.Effect(hero.coord, hero.x, hero.y, -1, 0) then
+      hero.vx = -hero.speed
+    else
+      hero.vx = 0
+    end
+    --hero.vx = -hero.speed
   end
   if love.keyboard.isDown("left") and love.keyboard.isDown("right") then
     hero.vx = 0
