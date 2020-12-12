@@ -1,8 +1,10 @@
+local relative_path = string.gsub((...), "/.+$", "/");
+
 world = {}
 CollideLib = {}
-CollideLib.Type = require("CollideLibType")
-CollideLib.Tool = require("CollideLibTool")
-CollideLib.Interpreter = require("CollideLibInterpreter")
+CollideLib.Type = require(relative_path.."CollideLibType")
+CollideLib.Tool = require(relative_path.."CollideLibTool")
+CollideLib.Interpreter = require(relative_path.."CollideLibInterpreter")
 
 
 function world:update(dt)
@@ -214,3 +216,5 @@ function CollideLib.Effect(pCoord, pX, pY, pVx, pVy, pComplete)
   return toReturn, heroContact, polygonContact
   
 end
+
+return world;

@@ -3,14 +3,20 @@ love.graphics.setDefaultFilter("nearest")
 if arg[#arg] == "-debug" then require("mobdebug").start() end
 function math.angle(x1,y1, x2,y2) return math.atan2(y2-y1, x2-x1) end
 
-require("CollideLib")
+require("src/luagon")
 
-Hero = {}
 gravity = 0.3
 
 platforms = {}
 
 hero = {}
+
+keys = {
+  up = 'w',
+  down = 'r',
+  left = 'a',
+  right = 's'
+}
 
 function love.load()
   love.window.setMode(1200, 700)
@@ -50,7 +56,7 @@ end
 
 function love.update(dt)
   
-  Hero.move(dt)
+  hero:move(dt)
   world:update(dt)
   
   
@@ -70,7 +76,7 @@ function love.update(dt)
   
   
   if not CollideLib.Effect(hero.coord, hero.x, hero.y, 0, 1) then
-    hero.vy = hero.vy + gravity
+    hero.vy = hero.vy + gravity*dt*60
   else
     hero.vy = 0
   end
@@ -135,45 +141,37 @@ function love.draw()
   love.graphics.print(love.timer.getFPS(), 0, 0)
   love.graphics.print(math.floor(hero.vy), 0, 10)
   
-  --[[
-  myStencilFunction = function()
-    love.graphics.circle("fill", 400, 300, 250)
-  end
-  love.graphics.setColor(0, 255, 255)
-  love.graphics.setStencil(myStencilFunction)
-  ]]
-  
 end
 
-function Hero.move(dt)
+function hero:move(dt)
   
-  if love.keyboard.isDown("right") and not love.keyboard.isDown("left") then
+  if love.keyboard.isDown(keys.right) and not love.keyboard.isDown(keys.left) then
     
-    if not CollideLib.Effect(hero.coord, hero.x, hero.y, 1, 0) then
-      hero.vx = hero.speed
+    if not CollideLib.Effect(self.coord, self.x, self.y, 1, 0) then
+      self.vx = self.speed
     else
-      hero.vx = 0
+      self.vx = 0
     end
-    --hero.vx = hero.speed
+    --self.vx = self.speed
   end
-  if love.keyboard.isDown("left") and not love.keyboard.isDown("right") then
-    if not CollideLib.Effect(hero.coord, hero.x, hero.y, -1, 0) then
-      hero.vx = -hero.speed
+  if love.keyboard.isDown(keys.left) and not love.keyboard.isDown(keys.right) then
+    if not CollideLib.Effect(self.coord, self.x, self.y, -1, 0) then
+      self.vx = -self.speed
     else
-      hero.vx = 0
+      self.vx = 0
     end
     --hero.vx = -hero.speed
   end
-  if love.keyboard.isDown("left") and love.keyboard.isDown("right") then
-    hero.vx = 0
+  if love.keyboard.isDown(keys.left) and love.keyboard.isDown(keys.right) then
+    self.vx = 0
   end
-  if love.keyboard.isDown("down") then
-    hero.vx = 0
+  if love.keyboard.isDown(keys.down) then
+    self.vx = 0
   end
   
-  if love.keyboard.isDown("space") or love.keyboard.isDown("up") then
+  if love.keyboard.isDown("space") or love.keyboard.isDown(keys.up) then
     if not jumpPressed then
-      hero.vy = -hero.jumpHeight
+      self.vy = -self.jumpHeight
       jumpPressed = true
     end
   else
@@ -185,12 +183,12 @@ end
 
 function AddPlatform(pX, pY, pCoord)
   
-  local platform = {}
-  
-  platform.x = pX
-  platform.y = pY
-  platform.coord = pCoord
-  platform.finalCoord = {}
+  local platform = {
+    x = pX,
+    y = pY,
+    coord = pCoord,
+    finalCoord = {}
+  }
   
   table.insert(platforms, platform)
   
