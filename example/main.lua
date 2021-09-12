@@ -3,7 +3,7 @@ love.graphics.setDefaultFilter("nearest")
 if arg[#arg] == "-debug" then require("mobdebug").start() end
 function math.angle(x1,y1, x2,y2) return math.atan2(y2-y1, x2-x1) end
 
-require("src/luagon")
+require("luagon/luagon")
 
 gravity = 0.3
 
@@ -69,7 +69,7 @@ function love.update(dt)
     slowDown = 0.02
     if hero.vx ~= 0 then
         if hero.vx > slowDown then
-            hero.vx = hero.vx - slowDown 
+            hero.vx = hero.vx - slowDown
         end
         if hero.vx < -slowDown then
             hero.vx = hero.vx + slowDown
